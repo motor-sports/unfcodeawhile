@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+        }
+        #map {
+            position: fixed;
+            width: 70vw; 
+            height: 100vh;
+            border: none;
+        }
+    </style>
+    <body>
+        <iframe id="map" src="./map.html"></iframe>
+        <script>
+            function clickHandler(zip) {
+                console.log(zip)
+            }
+
+            window.addEventListener("message", (event) => {
+                if (event.data?.type === "zip_click_handler_loaded") {
+                    console.log("zip_click_handler is ready inside iframe!");
+                    
+                    const iframe = document.getElementById("map");
+                    
+                    console.log("loaded");
+                    iframe.contentWindow.postMessage({
+                        type: "addRelay",
+                        funcCode: clickHandler.toString()
+                    }, "*");
+                }
+            });
+        </script>
+    </body>
+</html>

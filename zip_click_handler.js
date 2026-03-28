@@ -8,7 +8,7 @@
         if (!map) { setTimeout(waitForMap, 100); return; }
 
         attachZipClickHandlers(map);
-        console.log("ZIP click handler initialized");
+        window.parent.postMessage({ type: "zip_click_handler_loaded" }, "*");
     }
 
     // Recursively attach click handler to all GeoJson layers
@@ -22,10 +22,47 @@
         }
     }
 
+    let relays = []
+
+    function addRelay(func) {
+        if (typeof func === "function") {
+            relays.push(func);
+            console.log("Relay added:", func.name || func);
+        }
+    }
+
+    window.addEventListener("message", (event) => {
+        // OPTIONAL: restrict origin for security
+        // if (event.origin !== "http://localhost:8000") return;
+
+        const data = event.data;
+        if (!data) return;
+
+        if (data.type === "addRelay") {
+            // data.funcCode is the function string from parent
+            try {
+                const func = new Function(`return ${data.funcCode}`)();
+                addRelay(func);
+            } catch (e) {
+                console.error("Failed to create relay function:", e);
+            }
+        } else if (data.type === "runRelays") {
+            executeRelays();
+        }
+    });
+
     // Click handler
-    function onZipClick(e) {
+    function onZipClick(e) {  
         var zip = e.target.feature.properties.postcode;
         console.log("ZIP clicked:", zip);
+
+        relays.forEach(f => {
+            try {
+                f(zip);
+            } catch (e) {
+                console.error("Error executing relay:", e);
+            }
+        });
 
         // Dispatch custom event
         window.dispatchEvent(new CustomEvent("zipClick", { detail: { zip: zip } }));
