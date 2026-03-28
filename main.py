@@ -1,17 +1,3 @@
-"""
-osm_map.py
-──────────
-Renders ZIP-code boundary regions and major roads.
-
-Sources:
-  • ZIP boundaries  → Census TIGER shapefile  (tl_2023_us_zcta520.shp)
-  • Roads           → Overpass / OSM XML file  (jacksonville_roads.xml)
-
-Usage:
-    python osm_map.py
-    python osm_map.py --zip-prefix 322 --roads jacksonville_roads.xml
-"""
-
 import json
 import time
 import argparse
@@ -205,16 +191,58 @@ def build_map(zip_gdf: gpd.GeoDataFrame, road_gdf: gpd.GeoDataFrame) -> folium.M
     print("[3/3] Building map")
 
     centroid = zip_gdf.geometry.union_all().centroid
+    minx, miny, maxx, maxy = zip_gdf.total_bounds
+    padding = 0.01
+    bounds = [[miny-padding, minx-padding], [maxy+padding, maxx+padding]]
+
     m = folium.Map(
-        location=[centroid.y, centroid.x],
-        zoom_start=10.4,
+        location=[(miny+maxy)/2, (minx+maxx)/2],
+        zoom_start=11,
         tiles=None,
-        zoom_control=False,      # removes +/- buttons
-        scrollWheelZoom=False,   # disables scroll to zoom
-        dragging=False,          # disables panning
-        doubleClickZoom=False,   # disables double-click zoom
-        touchZoom=False,         # disables pinch zoom on mobile
+        zoom_control=False,       # remove buttons
+        scrollWheelZoom=True,    # disable mouse wheel
+        dragging=True,            # allow panning
+        doubleClickZoom=False,    # disable double-click zoom
+        touchZoom=True,            # pinch zoom still works on mobile
+        max_bounds=bounds
     )
+
+    zoom_js = f"""
+    <script>
+    (function waitForMap() {{
+        var mapEl = document.querySelector('.folium-map');
+        if (!mapEl) {{ setTimeout(waitForMap, 100); return; }}
+        var map = window[mapEl.id];
+        if (!map) {{ setTimeout(waitForMap, 100); return; }}
+
+        map.setMinZoom(10);
+
+
+        console.log("Zoom bounds set: min=10");
+    }})();
+    </script>
+    """
+    m.get_root().html.add_child(folium.Element(zoom_js))
+
+    max_bounds_js = f"""
+    <script>
+    (function waitForMap() {{
+        var mapEl = document.querySelector('.folium-map');
+        if (!mapEl) {{ setTimeout(waitForMap, 100); return; }}
+        var map = window[mapEl.id];
+        if (!map) {{ setTimeout(waitForMap, 100); return; }}
+
+        // Set max bounds once map is ready
+        var bounds = L.latLngBounds({bounds});
+        map.setMaxBounds(bounds);
+        map.options.maxBoundsViscosity = 1.0;
+
+        console.log("Max bounds applied:", bounds);
+    }})();
+    </script>
+    """
+    m.get_root().html.add_child(folium.Element(max_bounds_js))
+
     folium.TileLayer(
         tiles="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png",
         attr="CartoDB",
@@ -287,7 +315,9 @@ def build_map(zip_gdf: gpd.GeoDataFrame, road_gdf: gpd.GeoDataFrame) -> folium.M
     </script>
     """
     m.get_root().html.add_child(folium.Element(labels_js))
-    folium.LayerControl(collapsed=False).add_to(m)
+    folium.LayerControl(position="bottomleft", collapsed=False).add_to(m)
+
+    m.get_root().html.add_child(folium.Element('<script src="zip_click_handler.js"></script>'))
 
     print(f"    done  ({time.perf_counter()-t0:.1f}s)")
     return m

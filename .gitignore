@@ -4,6 +4,7 @@
 .osm
 .xml
 tl_2023_us_zcta520/
+data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
