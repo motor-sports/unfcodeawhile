@@ -207,8 +207,13 @@ def build_map(zip_gdf: gpd.GeoDataFrame, road_gdf: gpd.GeoDataFrame) -> folium.M
     centroid = zip_gdf.geometry.union_all().centroid
     m = folium.Map(
         location=[centroid.y, centroid.x],
-        zoom_start=11,
-        tiles=None
+        zoom_start=10.4,
+        tiles=None,
+        zoom_control=False,      # removes +/- buttons
+        scrollWheelZoom=False,   # disables scroll to zoom
+        dragging=False,          # disables panning
+        doubleClickZoom=False,   # disables double-click zoom
+        touchZoom=False,         # disables pinch zoom on mobile
     )
     folium.TileLayer(
         tiles="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png",
