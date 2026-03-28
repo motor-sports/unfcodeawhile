@@ -1,3 +1,10 @@
+# custom shit
+.osm.pbf
+.pbf
+.osm
+.xml
+tl_2023_us_zcta520/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
