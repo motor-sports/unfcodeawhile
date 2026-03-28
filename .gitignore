@@ -4,8 +4,7 @@
 .osm
 .xml
 tl_2023_us_zcta520/
-.html
-!index.html
+iframetest.html
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
